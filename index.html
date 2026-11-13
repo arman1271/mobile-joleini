@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#142b52">
+<title>مدیریت فروشگاه</title>
+<style>
+:root{--navy:#142b52;--blue:#2874d0;--bg:#f3f6fb;--line:#e4eaf2;--muted:#718096}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Tahoma,Arial,sans-serif;color:#172338}
+header{background:linear-gradient(130deg,#102344,#1d477f);color:white;padding:22px 18px 26px;border-radius:0 0 24px 24px}
+.brand{font-size:21px;font-weight:800;letter-spacing:1px}.sub{font-size:12px;color:#d4e2f7;margin-top:7px}
+main{max-width:760px;margin:auto;padding:16px}.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:-8px}
+.stat,.panel{background:white;border:1px solid var(--line);border-radius:16px;padding:15px;box-shadow:0 5px 18px #1c35500a}
+.stat small{color:var(--muted)}.stat strong{display:block;font-size:21px;margin-top:8px;color:var(--navy)}
+nav{display:flex;gap:7px;overflow:auto;padding:14px 0 12px}
+nav button,.btn{border:0;border-radius:11px;padding:11px 14px;background:#e5edf8;color:var(--navy);font-weight:700;white-space:nowrap;cursor:pointer}
+nav button.active,.btn.primary{background:var(--navy);color:white}
+.panel{margin:10px 0}.panel h2{font-size:17px;margin:0 0 13px;color:var(--navy)}
+input,select{width:100%;padding:12px;border:1px solid #dbe3ee;border-radius:10px;margin:5px 0 10px;font:inherit;background:white}
+label{font-size:12px;color:#526176} .grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}
+.item{border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;background:#fff}
+.itemtop{display:flex;justify-content:space-between;gap:10px}.item b{color:var(--navy)}
+.tag{font-size:11px;background:#eaf2ff;color:#245a9f;padding:5px 8px;border-radius:20px}
+.muted{font-size:12px;color:var(--muted);line-height:1.8}.price{font-size:13px;margin-top:7px}
+.hidden{display:none!important}.danger{background:#fff0f0;color:#a52b2b}.notice{background:#fff8e6;color:#805a00;padding:11px;border-radius:10px;font-size:12px;line-height:1.8}
+button:disabled{opacity:.5}
+@media(min-width:600px){.cards{grid-template-columns:repeat(4,1fr)}}
+.cart-line{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}.cart-line .muted{font-size:11px}.cart-total{background:#f3f6fb;border-radius:10px;padding:12px;font-weight:bold;margin:10px 0}.report-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin:10px 0}.report-stat{background:#f7f9fd;border:1px solid var(--line);border-radius:12px;padding:12px}.report-stat small{display:block;color:var(--muted);font-size:11px}.report-stat strong{display:block;color:var(--navy);font-size:18px;margin-top:7px}.report-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.report-head input{max-width:190px}
+
+.barcodebox{background:#fff;border:1px dashed #cbd5e1;border-radius:10px;padding:8px;margin-top:9px;text-align:center}
+.barcodebox svg{max-width:100%;height:54px}.barcode-actions{display:flex;gap:7px;margin-top:7px}.barcode-actions button{flex:1}
+#reader{width:100%;max-width:420px;min-height:230px;margin:12px auto;background:#101827;border-radius:14px;overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative}
+#scannerVideo{width:100%;height:230px;object-fit:cover;display:none}
+#scannerPlaceholder{color:#dbeafe;text-align:center;padding:28px 16px;font-size:13px;line-height:2}
+.scan-controls{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.scan-controls .btn{flex:1;min-width:130px}
+</style>
+<!-- کتابخانه‌های سنگین فقط هنگام نیاز و به‌صورت تنبل بارگذاری می‌شوند تا صفحه اصلی سریع باز شود. -->
+</head>
+<body>
+<header><div class="brand" id="appBrand">موبایل جلینی</div><div class="sub">مدیریت هوشمند کالا و فروش</div></header>
+<main>
+<section class="cards">
+ <div class="stat"><small>تعداد کالاها</small><strong id="totalItems">۰</strong></div>
+ <div class="stat"><small>تعداد موجودی</small><strong id="totalStock">۰</strong></div>
+ <div class="stat"><small>فروش ثبت‌شده</small><strong id="totalSales">۰</strong></div>
+ <div class="stat"><small>ارزش فروش ثبت‌شده</small><strong id="salesValue">۰</strong></div>
+</section>
+<nav>
+<button class="active" data-tab="search">جستجوی کالا</button><button data-tab="products">ثبت کالا</button><button data-tab="sale">ثبت فروش</button><button data-tab="history">فروش‌ها</button><button data-tab="report">گزارش روزانه</button><button data-tab="accounts">حساب مشتریان</button><button data-tab="invoiceSettings">مشخصات فروشگاه</button><button data-tab="backup">پشتیبان‌گیری</button><button data-tab="settings">کاربر</button>
+</nav>
+<section id="search" class="panel tab"><h2>جستجوی سریع محصول</h2>
+<input id="query" placeholder="نام، مدل یا بارکد را وارد کن…" oninput="renderProducts()">
+<div class="row"><input id="scanCode" placeholder="بارکد را وارد یا اسکن کن"><button class="btn primary" onclick="searchBarcode()">جستجو</button></div>
+<div id="productResults"></div>
+</section>
+<section id="products" class="panel tab hidden"><h2>ثبت محصول جدید</h2>
+<form id="productForm">
+<div class="grid"><div><label>نوع کالا</label><select id="category"><option>گوشی</option><option>لوازم جانبی</option></select></div><div><label>نام محصول</label><input id="name" required placeholder="مثلاً iPhone 13"></div>
+<div><label>مدل / مشخصات</label><input id="model" placeholder="128GB - مشکی"></div><div><label>بارکد</label><input id="barcode" placeholder="بارکد روی جعبه"></div>
+<div><label>قیمت خرید (تومان)</label><input id="buy" type="number" min="0" required></div><div><label>قیمت فروش (تومان)</label><input id="sell" type="number" min="0" required></div>
+<div><label>تعداد موجودی</label><input id="qty" type="number" min="0" value="1" required></div><div><label>محل کالا / شلف</label><input id="shelf" placeholder="مثلاً شلف A، طبقه ۲"></div></div>
+<button class="btn primary" type="submit">ذخیره محصول</button>
+</form></section>
+<section id="sale" class="panel tab hidden"><h2>ثبت فروش و صدور فاکتور</h2>
+<label>انتخاب محصول (کد کالا هم کنار نام نمایش داده می‌شود)</label><select id="saleProduct"></select>
+<div class="grid"><div><label>تعداد این کالا</label><input id="saleQty" type="number" min="1" value="1"></div><div style="display:flex;align-items:end"><button type="button" class="btn primary" style="width:100%;margin-bottom:10px" onclick="addToCart()">افزودن به فاکتور</button></div>
+<div><label>فروشنده</label><select id="seller" required><option value="">انتخاب فروشنده</option><option value="مدیر">مدیر</option><option value="شاگرد">شاگرد</option></select></div><div><label>نام خریدار</label><input id="customerName" placeholder="اختیاری"></div><div><label>شماره تماس خریدار</label><input id="customerPhone" inputmode="tel" placeholder="اختیاری"></div></div>
+<h3 style="font-size:14px;color:var(--navy);margin:8px 0">سبد خرید / اقلام فاکتور</h3><div id="saleCart"><p class="muted">هنوز کالایی به فاکتور اضافه نشده است.</p></div>
+<div class="cart-total" id="cartTotal">جمع کل: ۰ تومان</div>
+<div><label for="paidAmount">مبلغ دریافتی (تومان) — خالی بگذاری یعنی تسویه کامل</label><input id="paidAmount" type="number" min="0" placeholder="مثلاً ۵۰۰۰۰۰"></div>
+<button class="btn primary" onclick="recordSale()">ثبت همه کالاها و صدور یک فاکتور</button><button class="btn danger" onclick="clearCart()" type="button">خالی کردن سبد</button><p id="saleMessage" class="muted"></p><div id="lastInvoice"></div>
+</section>
+<section id="history" class="panel tab hidden"><h2>تاریخچه فروش</h2><div id="salesList"></div></section>
+<section id="report" class="panel tab hidden">
+ <div class="report-head"><h2 style="margin:0">گزارش روزانه فروش</h2><div><label for="reportDate">انتخاب روز</label><input id="reportDate" type="date"></div></div>
+ <div class="report-cards">
+  <div class="report-stat"><small>تعداد فاکتورهای روز</small><strong id="dailyInvoiceCount">۰</strong></div>
+  <div class="report-stat"><small>تعداد کالای فروخته‌شده</small><strong id="dailyUnits">۰</strong></div>
+  <div class="report-stat"><small>مجموع فروش روز</small><strong id="dailyRevenue">۰ تومان</strong></div>
+  <div class="report-stat"><small>سود ناخالص قابل محاسبه</small><strong id="dailyProfit">۰ تومان</strong></div>
+  <div class="report-stat"><small>تعداد کالاهای موجود</small><strong id="remainingKinds">۰</strong></div>
+  <div class="report-stat"><small>مجموع موجودی باقی‌مانده</small><strong id="remainingUnits">۰ عدد</strong></div>
+ </div>
+ <h3 style="font-size:14px;color:var(--navy)">فروش‌های این روز</h3><div id="dailySalesList"></div>
+ <h3 style="font-size:14px;color:var(--navy);margin-top:18px">موجودی فعلی انبار</h3><div id="remainingStockList"></div>
+ <p id="reportNote" class="notice"></p>
+</section>
+<section id="accounts" class="panel tab hidden">
+ <h2>حساب مشتریان و بدهکاری‌ها</h2>
+ <div class="report-cards">
+  <div class="report-stat"><small>مجموع طلب از مشتریان</small><strong id="accountsReceivable">۰ تومان</strong></div>
+  <div class="report-stat"><small>تعداد مشتریان بدهکار</small><strong id="debtCustomerCount">۰</strong></div>
+ </div>
+ <p class="muted">برای ثبت بدهی، هنگام فروش نام یا شماره تماس مشتری را وارد کن و مبلغ دریافتی را کمتر از مبلغ فاکتور بزن. پرداخت‌های بعدی را از همین بخش ثبت کن.</p>
+ <div id="customerAccountsList"></div>
+</section>
+
+
+<section id="invoiceSettings" class="panel tab hidden">
+ <h2>مشخصات فروشگاه و سربرگ فاکتور</h2>
+ <p class="muted">نام، آدرس و شماره تماس فروشگاه را هر زمان خواستی تغییر بده. این اطلاعات در صفحه برنامه و فاکتورهای چاپی نمایش داده می‌شوند.</p>
+ <div><label for="storeName">نام فروشگاه</label><input id="storeName" type="text" maxlength="60" placeholder="مثلاً موبایل جلینی"></div>
+ <div><label for="storeAddress">آدرس فروشگاه</label><input id="storeAddress" type="text" placeholder="مثلاً پاکدشت، خیابان ..."></div>
+ <div><label for="storePhone">شماره تماس فروشگاه</label><input id="storePhone" type="tel" inputmode="tel" placeholder="شماره تماس فروشگاه"></div>
+ <button class="btn primary" type="button" onclick="saveInvoiceHeader()">ذخیره سربرگ فاکتور</button>
+ <p id="invoiceHeaderMessage" class="muted"></p>
+ <div class="item"><b>پیش‌نمایش سربرگ</b><div id="invoiceHeaderNamePreview" style="font-size:20px;font-weight:900;color:var(--navy);margin-top:10px">موبایل جلینی</div><div id="invoiceHeaderPreview" class="muted">آدرس و شماره تماس پس از ذخیره اینجا نمایش داده می‌شوند.</div></div>
+</section>
+
+<section id="backup" class="panel tab hidden">
+ <h2>پشتیبان‌گیری و بازیابی اطلاعات</h2>
+ <p class="muted">از اطلاعات فروشگاهت یک فایل پشتیبان بگیر و آن را در جای امنی مثل حافظه گوشی یا فضای ابری شخصی نگه دار. برای انتقال اطلاعات به گوشی یا مرورگر دیگر، همین فایل را بازیابی کن.</p>
+ <div class="item">
+  <b>⬇️ دریافت فایل پشتیبان</b>
+  <p class="muted">شامل کالاها، موجودی، فروش‌ها، فاکتورها، حساب مشتریان، مشخصات فروشگاه و تنظیم نقش کاربر.</p>
+  <button class="btn primary" type="button" onclick="downloadBackup()">آماده‌سازی فایل پشتیبان</button>
+  <a id="backupDownloadLink" class="btn" href="#" download="Mobile_Joleini_Backup.json" style="display:none;margin-top:10px;text-align:center;text-decoration:none">⬇️ لمس کن و فایل پشتیبان را دانلود کن</a>
+ </div>
+ <div class="item">
+  <b>⬆️ بازیابی از فایل پشتیبان</b>
+  <p class="muted">فایل پشتیبان قبلی با پسوند JSON را انتخاب کن. بازیابی، اطلاعات فعلی این مرورگر را با اطلاعات داخل فایل جایگزین می‌کند.</p>
+  <input id="backupFile" type="file" accept=".json,application/json">
+  <button class="btn primary" type="button" onclick="restoreBackup()">بازیابی اطلاعات</button>
+ </div>
+ <div class="notice">نکته مهم: فایل پشتیبان را مرتب دانلود و خارج از مرورگر نگهداری کن. اطلاعات این نسخه روی همین دستگاه و مرورگر ذخیره می‌شوند و به‌صورت خودکار روی سرور یا گوشی‌های دیگر همگام‌سازی نمی‌شوند.</div>
+ <p id="backupMessage" class="muted" aria-live="polite"></p>
+</section>
+
+<section id="settings" class="panel tab hidden"><h2>نقش کاربر</h2>
+<label>ورود آزمایشی با نقش</label><select id="role" onchange="applyRole()"><option value="manager">مدیر</option><option value="staff">شاگرد</option></select>
+<p class="muted" id="roleInfo">مدیر: مشاهده قیمت خرید و سود و مدیریت کالاها.</p>
+<div class="notice">این نسخه فقط نمونه اولیه روی همین دستگاه است. ورود واقعی چندکاربره و همگام‌سازی آنلاین هنوز به سرور و تنظیم حساب Firebase نیاز دارد.</div>
+</section>
+</main>
+<script>
+const fa=n=>Number(n||0).toLocaleString('fa-IR');
+let products=JSON.parse(localStorage.getItem('mj_products')||'[]');
+let sales=JSON.parse(localStorage.getItem('mj_sales')||'[]');
+let role=localStorage.getItem('mj_role')||'manager';
+let invoiceHeader=JSON.parse(localStorage.getItem('mj_invoice_header')||'{"address":"","phone":""}');
+invoiceHeader.name=invoiceHeader.name||'موبایل جلینی';
+function loadInvoiceHeader(){document.getElementById('storeName').value=invoiceHeader.name||'موبایل جلینی';document.getElementById('storeAddress').value=invoiceHeader.address||'';document.getElementById('storePhone').value=invoiceHeader.phone||'';renderInvoiceHeaderPreview();}
+function renderInvoiceHeaderPreview(){let name=document.getElementById('storeName')?.value.trim()||invoiceHeader.name||'موبایل جلینی';let a=document.getElementById('storeAddress')?.value.trim()??invoiceHeader.address??'';let ph=document.getElementById('storePhone')?.value.trim()??invoiceHeader.phone??'';let title=document.getElementById('invoiceHeaderNamePreview');if(title)title.textContent=name;let el=document.getElementById('invoiceHeaderPreview');if(el)el.textContent=[a,ph?'تلفن: '+ph:''].filter(Boolean).join(' | ')||'آدرس و شماره تماس پس از ذخیره اینجا نمایش داده می‌شوند.';}
+function saveInvoiceHeader(){let name=document.getElementById('storeName').value.trim();if(!name){alert('لطفاً نام فروشگاه را وارد کن.');document.getElementById('storeName').focus();return;}invoiceHeader={name,address:document.getElementById('storeAddress').value.trim(),phone:document.getElementById('storePhone').value.trim()};localStorage.setItem('mj_invoice_header',JSON.stringify(invoiceHeader));applyStoreName();renderInvoiceHeaderPreview();document.getElementById('invoiceHeaderMessage').textContent='مشخصات فروشگاه ذخیره شد.';}
+function applyStoreName(){let name=invoiceHeader.name||'موبایل جلینی';let brand=document.getElementById('appBrand');if(brand)brand.textContent=name;document.title=name+' | مدیریت فروشگاه';}
+products.forEach(p=>{if(!p.barcode)p.barcode='MJ'+String(p.id).slice(-8)+Math.floor(Math.random()*90+10);});
+const save=()=>{localStorage.setItem('mj_products',JSON.stringify(products));localStorage.setItem('mj_sales',JSON.stringify(sales));};
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));document.getElementById(b.dataset.tab).classList.remove('hidden');if(b.dataset.tab==='sale')fillSale();if(b.dataset.tab==='history')renderSales();if(b.dataset.tab==='report')renderDailyReport();if(b.dataset.tab==='accounts')renderCustomerAccounts();if(b.dataset.tab==='invoiceSettings')loadInvoiceHeader();});
+document.getElementById('productForm').onsubmit=e=>{e.preventDefault();let code=document.getElementById('barcode').value.trim()||makeBarcode();if(products.some(p=>p.barcode===code)){alert('این بارکد قبلاً ثبت شده است.');return;}products.push({id:Date.now(),category:document.getElementById('category').value,name:document.getElementById('name').value.trim(),model:document.getElementById('model').value.trim(),barcode:code,buy:+document.getElementById('buy').value,sell:+document.getElementById('sell').value,qty:+document.getElementById('qty').value,shelf:document.getElementById('shelf').value.trim()});save();e.target.reset();document.getElementById('qty').value=1;renderAll();alert('محصول ذخیره شد. بارکد: '+code);};
+function renderProducts(){
+  const q=document.getElementById('query').value.trim().toLowerCase();
+  const matches=products.filter(p=>(String(p.name||'')+' '+String(p.model||'')+' '+String(p.barcode||'')).toLowerCase().includes(q));
+  const list=matches.slice(0,100);
+  const cards=list.map(p=>`<div class="item"><div class="itemtop"><b>${esc(p.name)} ${p.model?' - '+esc(p.model):''}</b><span class="tag">${esc(p.category||'')}</span></div><div class="muted">موجودی: ${fa(p.qty)} | محل: ${esc(p.shelf||'ثبت نشده')} | بارکد: ${esc(p.barcode||'ندارد')}</div><div class="price">قیمت فروش: <b>${fa(p.sell)} تومان</b>${role==='manager'?`<br>قیمت خرید: ${fa(p.buy)} تومان | سود هر عدد: ${fa((Number(p.sell)||0)-(Number(p.buy)||0))} تومان`:''}</div>${p.barcode?`<div class="barcodebox"><div class="muted">کد کالا: ${esc(p.barcode)}</div><div class="barcode-actions"><button class="btn" onclick="printLabel(${p.id})">چاپ برچسب ۵×۲</button></div></div>`:''}<div class="row" style="margin-top:8px"><button class="btn" onclick="editProduct(${p.id})">ویرایش</button><button class="btn danger" onclick="removeProduct(${p.id})">حذف</button></div></div>`).join('');
+  productResults.innerHTML=cards || '<p class="muted">'+(q?'محصولی با این جستجو پیدا نشد.':'هنوز کالایی ثبت نشده است.')+'</p>';
+  if(matches.length>100) productResults.insertAdjacentHTML('beforeend',`<p class="muted">۱۰۰ کالا از ${fa(matches.length)} کالا نمایش داده شده؛ برای دیدن بقیه، جستجو را دقیق‌تر کن.</p>`);
+}
+
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function searchBarcode(){query.value=scanCode.value;renderProducts();}
+function editProduct(id){let p=products.find(x=>x.id===id);if(!p)return;let n=prompt('نام محصول',p.name);if(n===null)return;p.name=n;let sh=prompt('محل کالا / شلف',p.shelf);if(sh!==null)p.shelf=sh;let q=prompt('تعداد موجودی',p.qty);if(q!==null&&Number.isFinite(+q)&&+q>=0)p.qty=+q;save();renderAll();}
+function removeProduct(id){if(confirm('این محصول حذف شود؟')){products=products.filter(p=>p.id!==id);save();renderAll();}}
+let saleCart=[];
+function fillSale(){let available=products.filter(p=>Number(p.qty)>0);saleProduct.innerHTML=available.map(p=>`<option value="${p.id}">${esc(p.name)}${p.model?' - '+esc(p.model):''} | کد: ${esc(p.barcode||'بدون کد')} | موجودی: ${fa(p.qty)}</option>`).join('');if(!available.length)saleProduct.innerHTML='<option value="">کالای موجودی‌دار نداریم</option>';}
+function addToCart(){let p=products.find(x=>x.id==document.getElementById('saleProduct').value),q=Math.floor(Number(document.getElementById('saleQty').value));if(!p||q<1){saleMessage.textContent='اول یک کالا و تعداد معتبر انتخاب کن.';return;}let line=saleCart.find(x=>x.productId===p.id);let already=line?line.qty:0;if(q+already>Number(p.qty)){saleMessage.textContent='تعداد درخواستی از موجودی کالا بیشتر است.';return;}if(line)line.qty+=q;else saleCart.push({productId:p.id,qty:q});document.getElementById('saleQty').value=1;saleMessage.textContent='کالا به فاکتور اضافه شد.';renderCart();}
+function renderCart(){let box=document.getElementById('saleCart');if(!saleCart.length){box.innerHTML='<p class="muted">هنوز کالایی به فاکتور اضافه نشده است.</p>';document.getElementById('cartTotal').textContent='جمع کل: ۰ تومان';return;}let total=0;box.innerHTML=saleCart.map((line,i)=>{let p=products.find(x=>x.id===line.productId);if(!p)return '';let sum=Number(p.sell)*line.qty;total+=sum;return `<div class="item cart-line"><div><b>${esc(p.name)}</b><div class="muted">کد: ${esc(p.barcode||'—')} | ${fa(p.sell)} تومان</div></div><span class="tag">${fa(line.qty)} عدد</span><button class="btn danger" onclick="removeCartLine(${i})">حذف</button><div class="muted" style="grid-column:1/-1">جمع این ردیف: ${fa(sum)} تومان</div></div>`;}).join('');document.getElementById('cartTotal').textContent='جمع کل: '+fa(total)+' تومان';}
+function removeCartLine(i){saleCart.splice(i,1);renderCart();}
+function clearCart(){saleCart=[];renderCart();document.getElementById('saleMessage').textContent='سبد خرید خالی شد.';}
+function customerAccountKey(name,phone){let ph=String(phone||'').replace(/\s+/g,'').trim();return ph?'phone:'+ph:'name:'+String(name||'').trim().toLocaleLowerCase('fa');}
+function recordSale(){if(!saleCart.length){saleMessage.textContent='سبد خرید خالی است؛ ابتدا کالا اضافه کن.';return;}if(!document.getElementById('seller').value){saleMessage.textContent='لطفاً فروشنده را انتخاب کن: مدیر یا شاگرد.';document.getElementById('seller').focus();return;}for(const line of saleCart){let p=products.find(x=>x.id===line.productId);if(!p||line.qty<1||line.qty>Number(p.qty)){saleMessage.textContent='موجودی یکی از کالاها کافی نیست. سبد را بررسی کن.';return;}}
+let total=saleCart.reduce((sum,line)=>{let p=products.find(x=>x.id===line.productId);return sum+(Number(p.sell)||0)*line.qty;},0);
+let paidField=document.getElementById('paidAmount').value.trim();let paid=paidField===''?total:Number(paidField);
+if(!Number.isFinite(paid)||paid<0||paid>total){saleMessage.textContent='مبلغ دریافتی باید بین صفر و مبلغ کل فاکتور باشد.';return;}
+let debt=total-paid,customer=document.getElementById('customerName').value.trim(),phone=document.getElementById('customerPhone').value.trim();
+if(debt>0&&!customer&&!phone){saleMessage.textContent='برای ثبت بدهی، نام یا شماره تماس مشتری را وارد کن.';document.getElementById('customerName').focus();return;}
+let now=Date.now(),invoiceNo='MJ-'+String(now).slice(-8),seller=document.getElementById('seller').value,date=new Date(now).toLocaleString('fa-IR'),created=[],accountKey=debt>0?customerAccountKey(customer,phone):'';
+saleCart.forEach((line,index)=>{let p=products.find(x=>x.id===line.productId);let sale={id:now+index,createdAt:now,buyUnit:Number(p.buy)||0,invoiceNo,invoiceTotal:total,paidAmount:paid,debtAmount:debt,customerKey:accountKey,name:p.name,model:p.model||'',category:p.category||'',barcode:p.barcode||'',qty:line.qty,unit:Number(p.sell)||0,seller,customer,phone,date};sales.unshift(sale);p.qty-=line.qty;created.push(sale);});save();saleCart=[];saleMessage.textContent=debt>0?'فاکتور ثبت شد؛ مانده بدهی مشتری: '+fa(debt)+' تومان':'فاکتور با موفقیت تسویه و ثبت شد.';document.getElementById('paidAmount').value='';document.getElementById('lastInvoice').innerHTML=`<button class="btn primary" onclick="printInvoice(${created[0].id})">🧾 چاپ فاکتور ${esc(invoiceNo)}</button>`;renderAll();fillSale();renderCart();} 
+function renderCustomerAccounts(){
+ const invoiceMap=new Map();sales.forEach(s=>{if(!s.invoiceNo||!s.customerKey||Number(s.debtAmount)<=0)return;if(!invoiceMap.has(s.invoiceNo))invoiceMap.set(s.invoiceNo,s);});
+ const invoices=[...invoiceMap.values()];const byCustomer=new Map();invoices.forEach(inv=>{let k=inv.customerKey;if(!byCustomer.has(k))byCustomer.set(k,{key:k,name:inv.customer||'بدون نام',phone:inv.phone||'',debt:0,invoices:[]});let c=byCustomer.get(k);c.debt+=Number(inv.debtAmount)||0;c.invoices.push(inv);});
+ const payments=JSON.parse(localStorage.getItem('mj_customer_payments')||'[]');payments.forEach(pay=>{let c=byCustomer.get(pay.customerKey);if(c)c.debt-=Number(pay.amount)||0;});
+ let customers=[...byCustomer.values()].map(c=>({...c,debt:Math.max(0,c.debt)})).filter(c=>c.debt>0).sort((a,b)=>b.debt-a.debt);
+ document.getElementById('accountsReceivable').textContent=fa(customers.reduce((a,c)=>a+c.debt,0))+' تومان';document.getElementById('debtCustomerCount').textContent=fa(customers.length);
+ document.getElementById('customerAccountsList').innerHTML=customers.length?customers.map((c,i)=>`<div class="item"><div class="itemtop"><b>${esc(c.name||'مشتری')}</b><span class="tag">مانده: ${fa(c.debt)} تومان</span></div><div class="muted">تلفن: ${esc(c.phone||'ثبت نشده')} | ${fa(c.invoices.length)} فاکتور بدهکار</div><div class="muted">${c.invoices.map(inv=>`فاکتور ${esc(inv.invoiceNo)}: ${fa(inv.debtAmount)} تومان`).join('<br>')}</div><button class="btn primary" onclick="addCustomerPayment('${encodeURIComponent(c.key)}')">ثبت دریافت وجه</button></div>`).join(''):'<p class="muted">در حال حاضر مشتری بدهکاری ثبت نشده است.</p>';
+}
+function addCustomerPayment(encodedKey){let key=decodeURIComponent(encodedKey);let invoices=sales.filter(s=>s.customerKey===key&&s.invoiceNo&&Number(s.debtAmount)>0);let first=invoices[0];if(!first)return;let payments=JSON.parse(localStorage.getItem('mj_customer_payments')||'[]');let already=payments.filter(x=>x.customerKey===key).reduce((a,x)=>a+(Number(x.amount)||0),0);let balance=Math.max(0,invoices.filter((s,i,a)=>a.findIndex(x=>x.invoiceNo===s.invoiceNo)===i).reduce((a,s)=>a+(Number(s.debtAmount)||0),0)-already);if(!balance)return;let raw=prompt('مبلغ دریافتی از '+(first.customer||first.phone)+' را به تومان وارد کن. مانده: '+fa(balance));if(raw===null)return;let amount=Number(String(raw).replace(/[٬,\s]/g,''));if(!Number.isFinite(amount)||amount<=0||amount>balance){alert('مبلغ واردشده معتبر نیست یا از مانده بدهی بیشتر است.');return;}payments.push({id:Date.now(),customerKey:key,amount,date:new Date().toLocaleString('fa-IR')});localStorage.setItem('mj_customer_payments',JSON.stringify(payments));renderCustomerAccounts();alert('دریافت وجه ثبت شد. مانده جدید: '+fa(balance-amount)+' تومان');}
+
+function renderSales(){salesList.innerHTML=sales.length?sales.map(s=>`<div class="item"><b>${esc(s.name)}</b><div class="muted">${esc(s.date)} | فروشنده: ${esc(s.seller)}</div><div class="price">${fa(s.qty)} عدد × ${fa(s.unit)} تومان = <b>${fa(s.qty*s.unit)} تومان</b></div><button class="btn" onclick="printInvoice(${s.id})">چاپ فاکتور</button></div>`).join(''):'<p class="muted">هنوز فروشی ثبت نشده.</p>';}
+function localDateKey(ts){let d=new Date(ts);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function renderDailyReport(){
+ const dateInput=document.getElementById('reportDate');
+ if(!dateInput.value)dateInput.value=localDateKey(Date.now());
+ const selected=dateInput.value;
+ const daySales=sales.filter(s=>s.createdAt && localDateKey(s.createdAt)===selected);
+ const revenue=daySales.reduce((a,s)=>a+(Number(s.qty)||0)*(Number(s.unit)||0),0);
+ const known=daySales.filter(s=>Number.isFinite(Number(s.buyUnit)) && s.buyUnit!==undefined && s.buyUnit!==null);
+ const profit=known.reduce((a,s)=>a+((Number(s.unit)||0)-(Number(s.buyUnit)||0))*(Number(s.qty)||0),0);
+ const units=daySales.reduce((a,s)=>a+(Number(s.qty)||0),0);
+ document.getElementById('dailyInvoiceCount').textContent=fa(new Set(daySales.map(s=>s.invoiceNo||s.id)).size);
+ document.getElementById('dailyUnits').textContent=fa(units);
+ document.getElementById('dailyRevenue').textContent=fa(revenue)+' تومان';
+ document.getElementById('dailyProfit').textContent=fa(profit)+' تومان';
+ document.getElementById('remainingKinds').textContent=fa(products.filter(p=>(Number(p.qty)||0)>0).length);
+ document.getElementById('remainingUnits').textContent=fa(products.reduce((a,p)=>a+(Number(p.qty)||0),0))+' عدد';
+ const list=document.getElementById('dailySalesList');
+ list.innerHTML=daySales.length?daySales.map(s=>{let hasCost=s.buyUnit!==undefined&&s.buyUnit!==null;let pr=hasCost?(Number(s.unit)-Number(s.buyUnit))*Number(s.qty):null;return `<div class="item"><div class="itemtop"><b>${esc(s.name)} ${esc(s.model||'')}</b><span class="tag">${fa(s.qty)} عدد</span></div><div class="muted">فاکتور: ${esc(s.invoiceNo||'—')} | فروشنده: ${esc(s.seller||'—')}</div><div class="price">مبلغ فروش: <b>${fa(s.qty*s.unit)} تومان</b>${hasCost?`<br>سود این فروش: <b>${fa(pr)} تومان</b>`:'<br>سود این فروش: قیمت خرید زمان فروش ثبت نشده'}</div><button class="btn" onclick="printInvoice(${s.id})">چاپ فاکتور</button></div>`}).join(''):'<p class="muted">برای این روز هنوز فروشی ثبت نشده است.</p>';
+ const stock=products.filter(p=>(Number(p.qty)||0)>0);
+ document.getElementById('remainingStockList').innerHTML=stock.length?stock.map(p=>`<div class="item"><div class="itemtop"><b>${esc(p.name)} ${esc(p.model||'')}</b><span class="tag">${fa(p.qty)} عدد</span></div><div class="muted">${esc(p.category||'')} | بارکد: ${esc(p.barcode||'—')} | محل: ${esc(p.shelf||'ثبت نشده')}</div></div>`).join(''):'<p class="muted">در حال حاضر موجودی‌ای ثبت نشده است.</p>';
+ const legacy=sales.filter(s=>!s.createdAt).length;
+ document.getElementById('reportNote').textContent=(known.length<daySales.length?'توجه: سود برخی فروش‌ها قابل محاسبه نیست، چون قیمت خرید در نسخه قبلی ذخیره نشده بود. ':'')+(legacy?' '+fa(legacy)+' فروش قدیمی زمان دقیق ثبت‌شده ندارند و در گزارش روزانه تاریخ‌دار لحاظ نشده‌اند.':'سود نمایش‌داده‌شده، سود ناخالص بر اساس قیمت خرید و فروش ثبت‌شده است و هزینه‌های جانبی را شامل نمی‌شود.');
+}
+document.getElementById('reportDate').addEventListener('change',renderDailyReport);
+document.getElementById('storeName').addEventListener('input',renderInvoiceHeaderPreview);document.getElementById('storeAddress').addEventListener('input',renderInvoiceHeaderPreview);document.getElementById('storePhone').addEventListener('input',renderInvoiceHeaderPreview);
+function applyRole(){role=document.getElementById('role').value;localStorage.setItem('mj_role',role);document.getElementById('roleInfo').textContent=role==='manager'?'مدیر: مشاهده قیمت خرید و سود و مدیریت کالاها.':'شاگرد: در این نمونه قیمت خرید و سود پنهان می‌شود.';renderProducts();}
+function renderAll(){totalItems.textContent=fa(products.length);totalStock.textContent=fa(products.reduce((a,p)=>a+(Number(p.qty)||0),0));totalSales.textContent=fa(sales.length);salesValue.textContent=fa(sales.reduce((a,s)=>a+(Number(s.qty)||0)*(Number(s.unit)||0),0));if(!document.getElementById('search').classList.contains('hidden'))renderProducts();if(!document.getElementById('sale').classList.contains('hidden'))fillSale();if(!document.getElementById('history').classList.contains('hidden'))renderSales();if(!document.getElementById('report').classList.contains('hidden'))renderDailyReport();if(!document.getElementById('accounts').classList.contains('hidden'))renderCustomerAccounts();}
+
+function makeBarcode(){return 'MJ'+Date.now().toString().slice(-9)+Math.floor(Math.random()*90+10);}
+function ensureBarcodeLib(){return new Promise((resolve,reject)=>{if(window.JsBarcode)return resolve();const urls=['https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js','https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js'];let i=0;function next(){if(window.JsBarcode)return resolve();if(i>=urls.length)return reject(new Error('barcode library unavailable'));const sc=document.createElement('script');sc.src=urls[i++];sc.onload=()=>window.JsBarcode?resolve():next();sc.onerror=next;document.head.appendChild(sc);}next();});}
+function lookupBarcode(){let code=document.getElementById('barcodeLookup').value.trim(),p=products.find(x=>x.barcode===code),box=document.getElementById('barcodeResult');if(!p){box.textContent='کالایی با این بارکد پیدا نشد.';return;}box.innerHTML=`<div class="item"><b>${esc(p.name)} ${esc(p.model||'')}</b><div class="muted">دسته: ${esc(p.category)} | موجودی: ${fa(p.qty)} | محل: ${esc(p.shelf||'ثبت نشده')}</div><div>قیمت فروش: ${fa(p.sell)} تومان</div><div class="muted">بارکد: ${esc(p.barcode)}</div></div>`;}
+document.getElementById('barcodeLookup').addEventListener('keydown',e=>{if(e.key==='Enter')lookupBarcode();});
+let qrScanner=null, scannerStarting=false;
+function scannerMsg(t){document.getElementById('scannerStatus').textContent=t;}
+function ensureScannerLib(){return new Promise((resolve,reject)=>{
+  if(window.Html5Qrcode)return resolve();
+  const urls=['https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js','https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js'];
+  let i=0;
+  function loadNext(){
+    if(window.Html5Qrcode)return resolve();
+    if(i>=urls.length)return reject(new Error('scanner library unavailable'));
+    const script=document.createElement('script');script.src=urls[i++];
+    script.onload=()=>window.Html5Qrcode?resolve():loadNext();
+    script.onerror=loadNext;document.head.appendChild(script);
+  }
+  loadNext();
+});}
+async function startScanner(){
+  if(scannerStarting)return;
+  scannerStarting=true;
+  try{
+    await stopScanner(false);
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){scannerMsg('این مرورگر اجازه دسترسی به دوربین را نمی‌دهد. Chrome را به‌روز کن و برنامه را با HTTPS باز کن.');return;}
+    if(!window.isSecureContext && location.hostname!=='localhost' && location.hostname!=='127.0.0.1'){
+      scannerMsg('دوربین فقط روی آدرس امن HTTPS یا localhost فعال می‌شود؛ باز کردن فایل از حافظه گوشی کافی نیست.');return;
+    }
+    scannerMsg('در حال آماده‌سازی اسکنر…');
+    await ensureScannerLib();
+    const reader=document.getElementById('reader');
+    reader.innerHTML='';
+    qrScanner=new Html5Qrcode('reader', {verbose:false});
+    const formats=window.Html5QrcodeSupportedFormats;
+    const config={fps:12, qrbox:{width:260,height:150}, aspectRatio:1.5};
+    if(formats) config.formatsToSupport=[formats.CODE_128,formats.EAN_13,formats.EAN_8,formats.UPC_A,formats.UPC_E,formats.QR_CODE].filter(x=>x!==undefined);
+    scannerMsg('در حال درخواست اجازه دوربین…');
+    await qrScanner.start({facingMode:'environment'},config,async(decodedText)=>{
+      document.getElementById('barcodeLookup').value=decodedText;
+      lookupBarcode();
+      scannerMsg('بارکد خوانده شد: '+decodedText);
+      await stopScanner(false);
+    },()=>{});
+    scannerMsg('دوربین روشن است؛ بارکد را داخل کادر قرار بده.');
+  }catch(e){
+    await stopScanner(false);
+    const msg=(e&&e.message)?e.message:String(e||'');
+    if(/permission|notallowed|denied/i.test(msg))scannerMsg('اجازه دوربین داده نشد. در تنظیمات سایت Chrome، دسترسی Camera را روی Allow بگذار.');
+    else if(/secure|https/i.test(msg))scannerMsg('برای دوربین باید برنامه با HTTPS باز شود.');
+    else if(/library unavailable/i.test(msg))scannerMsg('کتابخانه اسکنر از اینترنت بارگذاری نشد. اینترنت را بررسی کن و دوباره بزن.');
+    else scannerMsg('اسکنر اجرا نشد: '+msg+'. صفحه را در Chrome به‌روز دوباره باز کن.');
+  }finally{scannerStarting=false;}
+}
+async function stopScanner(showMessage=true){
+  if(qrScanner){
+    const old=qrScanner;qrScanner=null;
+    try{if(old.isScanning)await old.stop();}catch(e){}
+    try{await old.clear();}catch(e){}
+  }
+  const reader=document.getElementById('reader');
+  if(reader)reader.innerHTML='<div id="scannerPlaceholder" style="color:#dbeafe;text-align:center;padding:28px 16px;font-size:13px;line-height:2">📷<br>پس از زدن شروع اسکن، تصویر دوربین اینجا نمایش داده می‌شود.</div>';
+  if(showMessage)scannerMsg('اسکن متوقف شد.');
+}
+function printInvoice(id){let s=sales.find(x=>x.id===id);if(!s)return;let invoiceRows=s.invoiceNo?sales.filter(x=>x.invoiceNo===s.invoiceNo):[s];let total=invoiceRows.reduce((a,x)=>a+(Number(x.qty)||0)*(Number(x.unit)||0),0);let rows=invoiceRows.map(x=>`<tr><td>${esc(x.name)}<div class="muted">${esc(x.model||'')} ${esc(x.category||'')}</div></td><td>${esc(x.barcode||'—')}</td><td>${fa(x.qty)}</td><td>${fa(x.unit)}</td><td>${fa((Number(x.qty)||0)*(Number(x.unit)||0))}</td></tr>`).join('');let w=window.open('','_blank','width=620,height=760');if(!w){alert('اجازه باز شدن پنجره چاپ را بده.');return;}w.document.write(`<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>فاکتور فروش ${esc(s.invoiceNo||'')}</title><style>body{font-family:Tahoma,Arial;color:#172338;margin:24px}.head{background:transparent;color:#142b52;padding:0 0 12px;border-radius:0;border-bottom:2px solid #d8e0eb}.head h2{font-weight:900;font-size:24px;color:#142b52}.muted{color:#667085;font-size:12px;line-height:2}.row{display:flex;justify-content:space-between;margin:12px 0}.box{border:1px solid #d8e0eb;border-radius:10px;padding:12px;margin-top:14px}table{width:100%;border-collapse:collapse;margin-top:15px}th,td{border:1px solid #d8e0eb;padding:10px;text-align:right}th{background:#eef3fa}.total{text-align:left;font-size:18px;font-weight:bold;margin-top:18px}.sign{display:flex;justify-content:space-between;margin-top:70px}@media print{button{display:none}}</style></head><body><div class="head"><h2 style="margin:0">${esc(invoiceHeader.name||'موبایل جلینی')}</h2><div>فاکتور فروش کالا</div><div class="muted">${esc(invoiceHeader.address||'')}${invoiceHeader.address&&invoiceHeader.phone?'　 |　 ':''}${invoiceHeader.phone?'تلفن: '+esc(invoiceHeader.phone):''}</div></div><div class="row"><span>شماره فاکتور: <b>${esc(s.invoiceNo||s.id)}</b></span><span>تاریخ: ${esc(s.date)}</span></div><div class="box"><b>مشخصات خریدار</b><div class="muted">نام: ${esc(s.customer||'—')}　 |　 تلفن: ${esc(s.phone||'—')}</div></div><table><thead><tr><th>شرح کالا</th><th>کد کالا</th><th>تعداد</th><th>قیمت واحد (تومان)</th><th>جمع (تومان)</th></tr></thead><tbody>${rows}</tbody></table><div class="total">مبلغ کل: ${fa(total)} تومان</div><div class="muted">دریافتی: ${fa(Number(s.paidAmount??total))} تومان　 |　 مانده: ${fa(Number(s.debtAmount)||0)} تومان</div><div class="muted">فروشنده: ${esc(s.seller||'—')}</div><div class="sign"><span>امضای خریدار</span><span>مهر و امضای فروشگاه</span></div><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close();}
+
+async function printLabel(id){let p=products.find(x=>x.id===id);if(!p)return;try{await ensureBarcodeLib();}catch(e){alert('کتابخانه ساخت بارکد بارگذاری نشد. اینترنت را روشن کن و دوباره تلاش کن.');return;}let svg=document.createElementNS('http://www.w3.org/2000/svg','svg');try{JsBarcode(svg,p.barcode,{format:'CODE128',displayValue:false,margin:0,height:35,lineColor:'#111'});}catch(e){alert('کد بارکد معتبر نیست؛ اطلاعات بارکد کالا را بررسی کن.');return;}let w=window.open('','_blank','width=420,height=260');if(!w){alert('اجازه باز شدن پنجره چاپ را بده.');return;}w.document.write(`<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>برچسب کالا</title><style>@page{size:5cm 2cm;margin:0}body{margin:0;width:5cm;height:2cm;font-family:Tahoma,Arial;display:flex;align-items:center;justify-content:center}.label{text-align:center;width:100%;padding:1mm}.name{font-size:8pt;font-weight:bold;white-space:nowrap;overflow:hidden}svg{width:95%;height:10mm}.code{font-size:6pt}</style></head><body><div class="label"><div class="name">${esc(p.name)}</div>${svg.outerHTML}<div class="code">${esc(p.barcode)}</div></div></body></html>`);w.document.close();w.onload=()=>w.print();}
+function showBarcode(id){let p=products.find(x=>x.id===id);if(!p)return;document.getElementById('barcodeLookup').value=p.barcode;document.querySelector('button[data-tab="barcode"]').click();lookupBarcode();}
+
+window._mjBackupObjectUrl = window._mjBackupObjectUrl || null;
+function getBackupKeys(){ return ['mj_products','mj_sales','mj_role','mj_invoice_header','mj_customer_payments']; }
+function downloadBackup(){
+  const msg=document.getElementById('backupMessage');
+  const link=document.getElementById('backupDownloadLink');
+  try{
+    const keys=new Set(getBackupKeys());
+    for(let i=0;i<localStorage.length;i++){
+      const key=localStorage.key(i);
+      if(key && key.startsWith('mj_')) keys.add(key);
+    }
+    const data={};
+    keys.forEach(k=>{
+      const raw=localStorage.getItem(k);
+      if(raw===null){data[k]=null;return;}
+      try{data[k]=JSON.parse(raw);}catch(_){data[k]=raw;}
+    });
+    const backup={app:'MOBILE_JOLEINI',formatVersion:2,createdAt:new Date().toISOString(),data};
+    const json=JSON.stringify(backup,null,2);
+    const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+    const filename='Mobile_Joleini_Backup_'+stamp+'.json';
+    let href='';
+    // Some Android in-app browsers do not support Blob URLs; fall back to a data URL.
+    if(typeof Blob!=='undefined' && window.URL && typeof URL.createObjectURL==='function'){
+      const blob=new Blob([json],{type:'application/json;charset=utf-8'});
+      if(window._mjBackupObjectUrl) URL.revokeObjectURL(window._mjBackupObjectUrl);
+      window._mjBackupObjectUrl=URL.createObjectURL(blob);
+      href=window._mjBackupObjectUrl;
+    }else{
+      href='data:application/json;charset=utf-8,'+encodeURIComponent(json);
+    }
+    link.href=href;
+    link.download=filename;
+    link.style.display='block';
+    link.textContent='⬇️ لمس کن و فایل پشتیبان را دانلود کن';
+    msg.textContent='فایل پشتیبان آماده شد. اگر دانلود خودکار شروع نشد، روی دکمه آبی زیر بزن.';
+    // Keep download activation directly within the user's button tap.
+    try{link.click();}catch(_){/* The visible link remains available. */}
+  }catch(err){
+    msg.textContent='ساخت فایل پشتیبان ناموفق بود: '+(err&&err.message?err.message:String(err||'خطای ناشناخته'))+'؛ اگر خطا مربوط به دسترسی ذخیره‌سازی است، برنامه را در همان مرورگر اصلی باز کن.';
+  }
+}
+function restoreBackup(){
+  const input=document.getElementById('backupFile'),file=input.files&&input.files[0],msg=document.getElementById('backupMessage');
+  if(!file){msg.textContent='ابتدا فایل پشتیبان را انتخاب کن.';return;}
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const parsed=JSON.parse(String(reader.result||''));
+      const data=parsed&&parsed.data?parsed.data:parsed;
+      if(!data||!Array.isArray(data.mj_products)||!Array.isArray(data.mj_sales))throw new Error('ساختار فایل پشتیبان معتبر نیست.');
+      if(data.mj_customer_payments!==null&&data.mj_customer_payments!==undefined&&!Array.isArray(data.mj_customer_payments))throw new Error('اطلاعات پرداخت مشتریان معتبر نیست.');
+      if(data.mj_invoice_header!==null&&data.mj_invoice_header!==undefined&&(typeof data.mj_invoice_header!=='object'||Array.isArray(data.mj_invoice_header)))throw new Error('مشخصات فروشگاه معتبر نیست.');
+      if(!confirm('هشدار: اطلاعات فعلی این مرورگر با اطلاعات فایل پشتیبان جایگزین می‌شود. قبل از ادامه، اگر اطلاعات فعلی مهم است از آن پشتیبان بگیر. ادامه می‌دهی؟'))return;
+      getBackupKeys().forEach(k=>{if(Object.prototype.hasOwnProperty.call(data,k)&&data[k]!==null)localStorage.setItem(k,JSON.stringify(data[k]));else localStorage.removeItem(k);});
+      products=JSON.parse(localStorage.getItem('mj_products')||'[]');
+      sales=JSON.parse(localStorage.getItem('mj_sales')||'[]');
+      role=localStorage.getItem('mj_role')||'manager';
+      invoiceHeader=JSON.parse(localStorage.getItem('mj_invoice_header')||'{"name":"موبایل جلینی","address":"","phone":""}');
+      invoiceHeader.name=invoiceHeader.name||'موبایل جلینی';
+      saleCart=[];
+      document.getElementById('role').value=role;
+      applyStoreName();loadInvoiceHeader();applyRole();renderAll();fillSale();renderCart();renderSales();renderCustomerAccounts();
+      input.value='';msg.textContent='اطلاعات با موفقیت بازیابی شد.';
+      alert('بازیابی اطلاعات با موفقیت انجام شد.');
+    }catch(err){msg.textContent='بازیابی انجام نشد: '+(err.message||err);}
+  };
+  reader.onerror=()=>{msg.textContent='خواندن فایل ممکن نشد. یک فایل پشتیبان معتبر انتخاب کن.';};
+  reader.readAsText(file);
+}
+
+document.getElementById('role').value=role;applyStoreName();renderAll();renderCart();loadInvoiceHeader();
+</script></body></html>
